@@ -7,30 +7,46 @@ from ezycore.models import Model
 from ezycore.manager import Segment
 
 
-RESULT = Union[Dict[str, Any], Model]
+# Iterator class used to accomodate varying data structs such as SQLs tuples
+RESULT = Union[Dict[str, Any], Model, Iterator]
 
 
 class Driver(ABC):
     """ Base class for defining custom drivers """
 
     @abstractmethod
-    def fetch(self, query: Any, limit_result: int = -1, model: Model = None) -> Iterator[RESULT]:
+    def fetch(self, query: Any, location: str = None, limit_result: int = -1, model: Model = None) -> Iterator[RESULT]:
         """ Fetches as many results as possible based of query given
 
         Parameters
         ----------
         query: Any
             Query for filtering data
+        location: :class:`str`
+            Name were data is being stored,
+            may vary between drivers
+        limit_result: :class:`int`
+            Number of results to limit to, 
+            values < 0 returns everything found
+        model: :class:`Model`
+            Model to convert results to,
+            if no model present returns raw result
         """
 
     @abstractmethod
-    def fetch_one(self, *queries) -> Optional[RESULT]:
+    def fetch_one(self, query: Any, location: str = None, model: Model = None) -> Optional[RESULT]:
         """ Fetches only one result which matches the query
 
         Parameters
         ----------
-        queries: Any
-            Query args for filtering data, may vary between drivers.
+        query: Any
+            Query for filtering data
+        location: :class:`str`
+            Name were data is being stored,
+            may vary between drivers
+        model: :class:`Model`
+            Model to convert results to,
+            if no model present returns raw result
         """
 
     @abstractmethod
