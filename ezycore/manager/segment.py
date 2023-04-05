@@ -203,6 +203,13 @@ class BaseSegment(ABC):
     ##
     ###########################################################################################
 
+    def __iter__(self):
+        return self
+
+    @abstractmethod
+    def __next__(self) -> Any:
+        ...
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(name={self.name}, size={self.size()}, max_size={self.max_size}, model={self.model})"
 
@@ -237,6 +244,7 @@ class Segment(BaseSegment):
 
         self.__queue = list()
         self.__data = dict()
+        self.__position = 0
 
     def size(self) -> int:
         return len(self.__data)
@@ -331,3 +339,14 @@ class Segment(BaseSegment):
                 print(getattr(obj, header), end='\t')
             print()
         print()
+
+    def __iter__(self):
+        self.__position = 0
+        return super().__iter__()
+
+    def __next__(self) -> Model:
+        if self.__position >= self.size():
+            self.__position = 0
+            raise StopIteration
+        self.__position += 1
+        return self.__data[self.__queue[-1 - (self.__position - 1)]]
