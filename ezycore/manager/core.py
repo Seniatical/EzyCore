@@ -318,6 +318,9 @@ class Manager(BaseManager):
     def populate_using_driver(self, location: str, driver: Driver, **driver_kwargs) -> None:
         seg = self.get_segment(location)
 
+        if not driver_kwargs.get('model'):
+            driver_kwargs['model'] = seg.model
+
         for loc in driver.fetch(**driver_kwargs):
             seg.add(loc)
 
