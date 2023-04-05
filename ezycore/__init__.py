@@ -1,5 +1,6 @@
 from .drivers import (
-    Driver
+    Driver,
+    SQLiteDriver
 )
 from .manager import (
     BaseSegment,
