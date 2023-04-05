@@ -77,6 +77,22 @@ class Driver(ABC):
         """
 
     @abstractmethod
+    def map_to_model(self, **kwds) -> None:
+        """ Maps locations to internal data spots.
+
+        e.g. Segment may be called `users`, but SQL table may be called `user_table`
+
+        Parameters
+        ----------
+        **kwds:
+            Keyword arguments for mapping from in-program name to database name.
+            
+            .. code-block:: py
+                d = Driver(..., models={'users': UserModel})
+                d.map_to_model(users='my_table')
+        """
+
+    @abstractmethod
     def export(self, stream: Iterator[Union[dict, Model]], include: set, exclude: set) -> None:
         """ Exports data from any object supporting the `__next__` method
 
