@@ -17,6 +17,8 @@ class SQLiteDriver(Driver):
     ----------
     models: Dict[:class:`str`, :class:`Model`]
         Models to convert fetched results to, mapping must be table name to model
+    model_maps: Dict[:class:`str`, :class:`str`]
+        Mapping from model key to database table name
     """
 
     ## auto gen tables which we generally dont care about
@@ -32,7 +34,8 @@ class SQLiteDriver(Driver):
                  cached_statements: int = 128,
                  uri: bool = False,
                  cursorClass: Any = None,
-                 models: Dict[str, Model] = dict()
+                 models: Dict[str, Model] = dict(),
+                 model_maps: Dict[str, str] = dict()
                 ) -> None:
         self.__connection: Connection = connect(
             database=database,
@@ -48,6 +51,7 @@ class SQLiteDriver(Driver):
 
         self.__models: Dict[str, Model] = models
         self.__headers: Dict[str, Tuple[str]] = dict()
+        self.__maps: Dict[str, str] = model_maps
         # table_name: (col, col, col)
 
         self._read_heads()
@@ -102,6 +106,7 @@ class SQLiteDriver(Driver):
         if model and not self.__models.get(location):
             self.__models[location] = model
         model = self.__models.get(location)
+        table = self.__maps.get(location, location)
 
         if not raw:
             if condition:
@@ -110,14 +115,14 @@ class SQLiteDriver(Driver):
                 limit_result = f'LIMIT {limit_result}'
             else:
                 limit_result = ''
-            raw = f'SELECT * FROM {location} {condition} {limit_result}'
+            raw = f'SELECT * FROM {table} {condition} {limit_result}'
 
         self.__cursor.execute(raw, parameters)
         res = self.__cursor.fetchall()
 
         if not res:     return
         if no_handle:   return iter(res)
-        return self._result_to_output(location, model if not ignore_model else None, *res)
+        return self._result_to_output(table, model if not ignore_model else None, *res)
 
 
     def fetch_one(self, location: str, condition: Any = None, model: Model = None, 
@@ -130,18 +135,23 @@ class SQLiteDriver(Driver):
         if model and not self.__models.get(location):
             self.__models[location] = model
         model = self.__models.get(location)
+        table = self.__maps.get(location, location)
 
         if not raw:
+
             if condition:
                 condition = f'WHERE {condition}'
-            raw = f'SELECT * FROM {location} {condition}'
+            raw = f'SELECT * FROM {table} {condition}'
 
         self.__cursor.execute(raw, parameters)
         r = self.__cursor.fetchone()
 
         if not r:       return
         if no_handle:   return r
-        return next(self._result_to_output(location, model if not ignore_model else None, r))
+        return next(self._result_to_output(table, model if not ignore_model else None, r))
+
+    def map_to_model(self, **kwds) -> None:
+        self.__maps.update(kwds)
 
     def export(self, stream: Iterator[Union[dict, Model]], include: set, exclude: set) -> None:
         return super().export(stream, include, exclude)
