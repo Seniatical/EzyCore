@@ -269,14 +269,14 @@ class BaseManager(ABC):
 
 
     def __iter__(self):
+        self.__index = 0
         return self
 
     def __next__(self):
+        if self.__index >= len(self.__k):
+            raise StopIteration()
         self.__index += 1
-        if self.__index > len(self.__k):
-            self.__index = 0
-            return self.__k[-1]
-        return self.__k[self.__index - 1]
+        return self.__locations[self.__k[self.__index - 1]]
 
 ########################################################################
 ##                                                                    ##
@@ -321,7 +321,7 @@ class Manager(BaseManager):
         if not driver_kwargs.get('model'):
             driver_kwargs['model'] = seg.model
 
-        for loc in driver.fetch(**driver_kwargs):
+        for loc in driver.fetch(location, **driver_kwargs):
             seg.add(loc)
 
     def export_segment(self, location: str, driver: Driver = None, **driver_kwargs) -> None:
