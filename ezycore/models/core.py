@@ -18,6 +18,10 @@ class Model(BaseModel):
             r = getattr(cls, '_config')
         except AttributeError as err:
             raise ModalMissingConfig('_config variable not found') from err
-        assert isinstance(r, Config), 'Invalid config class provided'
+
+        if isinstance(r, dict):
+            setattr(cls, '_config', Config(**r)) 
+        else:
+            assert isinstance(r, Config), 'Invalid config class provided'
 
         return super().__init_subclass__()

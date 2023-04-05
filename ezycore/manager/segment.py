@@ -98,22 +98,22 @@ class BaseSegment(ABC):
     ###########################################################################################
 
     @property
-    def name(self):
+    def name(self) -> str:
         """ Returns name of segment """
         return self.__name
     
     @property
-    def max_size(self):
+    def max_size(self) -> int:
         """ Returns maximum-size of segment """
         return self.__max_size
     
     @property
-    def model(self):
+    def model(self) -> Model:
         """ Returns model of segment """
         return self.__model
 
     @property
-    def make_space(self):
+    def make_space(self) -> bool:
         """ Whether model should remove least accessed data """
         return self.__ms
 
@@ -301,6 +301,13 @@ class Segment(BaseSegment):
 
         self.__queue.pop()
         self.__data.pop(obj_key)
+
+    def update(self, obj_key: Any, **kwds) -> None:
+        current = self.get(obj_key)
+        d = dict(current)
+        d.update(kwds)
+
+        self.__data[obj_key] = self.model(**d)
 
     def last(self) -> Optional[Model]:
         if self.size() == 0:

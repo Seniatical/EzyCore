@@ -1,22 +1,37 @@
-from ezycore import Config, Manager, Model
+from ezycore import Manager
+from ezycore.models import Model, Config
+from os import urandom
 
 
-class User(Model):
+class UserModel(Model):
+    id: str
     username: str
     password: str
 
-    _config: Config = Config(search_by='username')
+    _config: Config = {
+        'search_by': 'id',
+    }
 
-manager = Manager(locations=['users'], models={'users': User})
-manager.populate('users',
-                 dict(username='Isa', password='Password'),
-                 dict(username='Foo', password='p1swe'),
-                 dict(username='Bar', password='bar-sfsd')
-                )
+    @classmethod
+    def random(cls) -> "UserModel":
+        return cls(id=urandom(10).hex(), username=urandom(5).hex(), password=urandom(20).hex())
 
-manager['users'].pretty_print()
 
-foo = manager['users'].get('Foo', 'password')
-print(foo)
+manager = Manager(locations=['users'], models={'users': UserModel})
+manager.populate(location='users', 
+                 data=[UserModel.random() for _ in range(5)] + [UserModel(id='user_id', username='foo', password='apassword')])
+
+## Finding user in Cache
+print(manager['users'].get('user_id'))
+### Using flags to fetch specific data
+# manager['users'].get('user_id', '*')  -> fetches as a dict instead of UserModel
+# manager['users'].get('user_id', '_id', 'username') -> fetches only _id and username
+# manager['users'].get('user_id', exclude={'password'}) -> excludes password from result
+
+## Updating user in Cache
+manager['users'].update('user_id', username='bar')
+print(manager['users'].get('user_id'))
+## Deleting user in Cache
+manager['users'].remove('user_id')
 
 manager['users'].pretty_print()

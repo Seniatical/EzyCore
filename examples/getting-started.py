@@ -4,12 +4,12 @@ from os import urandom
 
 
 class UserModel(Model):
-    _id: str
+    id: str
     username: str
     password: str
 
-    __config__: Config = {
-        'search_by': '_id',
+    _config: Config = {
+        'search_by': 'id',
     }
 
     @classmethod
@@ -19,7 +19,7 @@ class UserModel(Model):
 
 manager = Manager(locations=['users'], models={'users': UserModel})
 manager.populate(location='users', 
-                 data=[UserModel.random() for _ in range(5)] + [UserModel(_id='user_id', username='foo', password='apassword')])
+                 data=[UserModel.random() for _ in range(5)] + [UserModel(id='user_id', username='foo', password='apassword')])
 
 ## Finding user in Cache
 print(manager['users'].get('user_id'))
