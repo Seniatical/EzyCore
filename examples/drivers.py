@@ -2,13 +2,15 @@
 
 from ezycore import Manager
 from ezycore.drivers import SqliteDriver
-from ezycore.models import Model
+from ezycore.models import Config, Model
 
 
 class UserModel(Model):
-    _id: str
+    id: str
     username: str
     password: str
+
+    _config = Config(search_by='id')
 
 
 driver = SqliteDriver('my_file.sqlite')
@@ -19,7 +21,7 @@ manager.populate_using_driver('users', driver=driver)
 
 manager['users'].pretty_print()
 
-manager['users'].add({'_id': 'SomeVeryRandomId', 'username': 'Bob', 'password': 'Ilikecheese123'})
+manager['users'].add({'id': 'SomeVeryRandomId', 'username': 'Bob', 'password': 'Ilikecheese123'})
 
 manager.export_segment('users', driver=driver)
 
