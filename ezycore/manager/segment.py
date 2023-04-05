@@ -188,6 +188,10 @@ class BaseSegment(ABC):
         """ Retrieves item which was last accessed """
 
     @abstractmethod
+    def clear(self) -> None:
+        """ Removes all elements from segment """ 
+
+    @abstractmethod
     def pretty_print(self, *, limit: int = -1) -> None:
         """ Prints out all data in segment, or until specified limit
 
@@ -321,6 +325,11 @@ class Segment(BaseSegment):
         if self.size() == 0:
             return
         return self.__data[self.__queue[-1]]
+
+    def clear(self) -> None:
+        self.__position = 0
+        self.__data.clear()
+        self.__queue.clear()
 
     def pretty_print(self, *, limit: int = -1) -> None:
         if (limit < 0) or (limit > self.size()):
