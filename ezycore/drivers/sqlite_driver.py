@@ -52,6 +52,7 @@ class SQLiteDriver(Driver):
         self.__models: Dict[str, Model] = models
         self.__headers: Dict[str, Tuple[str]] = dict()
         self.__maps: Dict[str, str] = model_maps
+        self.__rev_map: Dict[str, str] = {v: k for k, v in self.__maps.items()}
         # table_name: (col, col, col)
 
         self._read_heads()
@@ -71,6 +72,25 @@ class SQLiteDriver(Driver):
                 yield data
             else:
                 yield model(**data)
+
+    def _get_model(self, location: str) -> Optional[Model]:
+        # -> __models[loc] -> __models[__maps[loc]] -> __models[__rev_map[loc]]
+        return self.__models.get(
+            location, 
+            self.__models.get(self.__maps.get(location), self.__models.get(self.__rev_map.get(location)))
+        )
+
+    def _model_fits(self, location: str) -> bool:
+        model = self._get_model(location)
+        if not model:
+            return False
+        keys = model.__fields__.keys()
+
+        return set(self.__headers[location]).issubset(set(keys))
+
+    def map_to_model(self, **kwds) -> None:
+        self.__maps.update(kwds)
+        self.__rev_map = {v: k for k, v in self.__maps.items()}
 
 
     def fetch(self, location: str, condition: str = '', limit_result: int = -1, 
@@ -103,9 +123,9 @@ class SQLiteDriver(Driver):
         parameters: Tuple[Any]
             Parameters to be supplied with statement, flexibility if using the ``raw`` arg
         """
-        if model and not self.__models.get(location):
+        if model and not self._get_model(location):
             self.__models[location] = model
-        model = self.__models.get(location)
+        model = self._get_model(location)
         table = self.__maps.get(location, location)
 
         if not raw:
@@ -132,16 +152,16 @@ class SQLiteDriver(Driver):
         """
         Fetches only 1 item
         """
-        if model and not self.__models.get(location):
+        if model and not self._get_model(location):
             self.__models[location] = model
-        model = self.__models.get(location)
+        model = self._get_model(location)
         table = self.__maps.get(location, location)
 
         if not raw:
 
             if condition:
                 condition = f'WHERE {condition}'
-            raw = f'SELECT * FROM {table} {condition}'
+            raw = f'SELECT * FROM {table} {condition} LIMIT 1'
 
         self.__cursor.execute(raw, parameters)
         r = self.__cursor.fetchone()
@@ -150,8 +170,20 @@ class SQLiteDriver(Driver):
         if no_handle:   return r
         return next(self._result_to_output(table, model if not ignore_model else None, r))
 
-    def map_to_model(self, **kwds) -> None:
-        self.__maps.update(kwds)
 
-    def export(self, stream: Iterator[Union[dict, Model]], include: set, exclude: set) -> None:
-        return super().export(stream, include, exclude)
+    def export(self, location: str, stream: Iterator[Union[dict, Model]]) -> None:
+        assert self._model_fits(location), "Incorrect model or no model binded for this table"
+        model = self._get_model(location)
+        include = set(self.__headers[location])
+
+        columns = []
+
+        for data in stream:
+            if isinstance(data, dict):
+                if model:
+                    data = model(**data)
+            data = data.dict(include=include)
+            columns.append(tuple(data.values()))
+
+        v = ('?',) * len(include)
+        self.__cursor.executemany(f'INSERT OR REPLACE INTO {location} VALUES ({",".join(v)})', columns)
