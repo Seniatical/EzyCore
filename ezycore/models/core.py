@@ -6,6 +6,7 @@ from ezycore.exceptions import ModalMissingConfig
 
 class Config(BaseModel):
     search_by: str
+    exclude: set = {'_config'}
     allow_partial: bool = False
     allow_regex: bool = False
 
