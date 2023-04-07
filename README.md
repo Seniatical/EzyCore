@@ -24,5 +24,5 @@ manager['messages'].add({'id': 123, 'content': 'Foo', 'author': 'Foo'})
 print(manager['messages'].get(123))
 ```
 <p>
-    View more examples over <a href="/examples">here</a>!
+    View more examples over <a href="/tree/main/examples">here</a>!
 </p>
