@@ -1,9 +1,10 @@
 # EzyCore
 A highly customizable cache manager for python
 
-#### Why use EzyCore
-* Implements proper data structures thanks to PyDantic
-* Supports partial referencing, easy updates across multiple caches/tables
+### Why use EzyCore
+* Implements proper data structures using pydantic 
+* Supports partial referencing between caches
+* Out of box support for many popular databases, such as SQLite, MongoDB and MySQL
 * Built on strict ABC classes, allows tons of flexibility and code customisation
 
 ## Example
@@ -24,5 +25,5 @@ manager['messages'].add({'id': 123, 'content': 'Foo', 'author': 'Foo'})
 print(manager['messages'].get(123))
 ```
 <p>
-    View more examples over <a href="/tree/main/examples">here</a>!
+    View more examples over <a href="/examples">here</a>!
 </p>
