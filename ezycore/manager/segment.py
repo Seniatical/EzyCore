@@ -263,6 +263,15 @@ class Segment(BaseSegment):
         ## Simply retrieves value, no queue handling here
         try:
             data: Model = self.__data[obj_key]
+            for partial in data.__ezycore_partials__:
+                if not self.manager:
+                    break
+                prim_key = getattr(data, partial)
+                try:
+                    setattr(data, partial, self.manager[data._config.partials[partial]].get(prim_key))
+                except ValueError:
+                    pass
+
             if not include:
                 return data
             if '*' in include:
