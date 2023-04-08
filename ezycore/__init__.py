@@ -9,6 +9,8 @@ from .manager import (
     Manager
 )
 from .models import (
+    M,
     Model,
-    Config
+    Config,
+    PartialRef
 )

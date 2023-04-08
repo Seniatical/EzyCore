@@ -1,1 +1,1 @@
-from .core import Config, Model
+from .core import Config, Model, PartialRef, M
