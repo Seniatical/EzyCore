@@ -13,6 +13,8 @@ class Config(BaseModel):
 
 
 class Model(BaseModel, arbitrary_types_allowed=True):
+    __ezycore_partials__: tuple = None
+
     def _read_partials(cls) -> Iterator[str]:
         for k, v in cls.__annotations__.items():
             __origin__ = getattr(v, '__origin__', None)
@@ -23,7 +25,9 @@ class Model(BaseModel, arbitrary_types_allowed=True):
                     raise ValueError(f'Invalid model provided for partial definition: {k}')
 
     def _verify_partials(cls) -> None:
-        partials = Model._read_partials(cls)
+        partials = tuple(Model._read_partials(cls))
+        cls.__ezycore_partials__ = partials
+
         defined_partials = cls._config.partials
 
         missing = []
@@ -62,6 +66,10 @@ class PartialRef(Generic[_M]):
     @classmethod
     def validate(cls, v, field: ModelField):
         type_ = field.outer_type_.__args__[0]
+
+        if isinstance(v, type_):
+            return v
+
         primary_key = type_._config.search_by
 
         primary_field =  type_.__fields__.get(primary_key)
