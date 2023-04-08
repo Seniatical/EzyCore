@@ -2,10 +2,10 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from .segment import BaseSegment, Segment
-from ezycore.models import Model
+from ezycore.models import M, Model
 from ezycore.drivers import Driver
 
-from typing import Any, List, Tuple, Dict, Iterable, Union, Optional
+from typing import Any, List, Tuple, Type, Dict, Iterable, Union, Optional
 
 
 class BaseManager(ABC):
@@ -30,11 +30,11 @@ class BaseManager(ABC):
     def __init__(
         self,
         locations: List[Union[str, BaseSegment]],
-        models: Dict[str, Model] = {},
+        models: Dict[str, Type[Model]] = {},
         location_data: Dict[str, Dict[str, Any]] = dict()
     ) -> None:
         self.__locations: Dict[str, BaseSegment] = dict()
-        self.__models: Dict[str, Model] = models
+        self.__models: Dict[str, Type[Model]] = models
 
         self.__index: int = 0
 
@@ -66,7 +66,7 @@ class BaseManager(ABC):
     ###########################################################################################
 
     @abstractmethod
-    def populate(self, location: str, *d, data: Iterable[Union[dict, Model]] = tuple()) -> None:
+    def populate(self, location: str, *d, data: Iterable[M] = tuple()) -> None:
         """ Populate a segment with an array of data structs
 
         Parameters
@@ -308,7 +308,7 @@ class Manager(BaseManager):
     ##
     ###########################################################################################
 
-    def populate(self, location: str, *d, data: Iterable[Union[dict, Model]] = tuple()) -> None:
+    def populate(self, location: str, *d, data: Iterable[M] = tuple()) -> None:
         d = tuple(data) + d
         seg = self.get_segment(location)
 

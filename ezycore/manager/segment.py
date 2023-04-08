@@ -1,7 +1,7 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 
-from ezycore.models import Model
+from ezycore.models import Model, M
 from ezycore.exceptions import Full
 from typing import Any, Iterable, Optional, Union
 
@@ -286,7 +286,7 @@ class Segment(BaseSegment):
 
         return self._get(obj_key, *flags, default=default)
 
-    def add(self, obj: Union[dict, Model], *, overwrite: bool = False) -> None:
+    def add(self, obj: M, *, overwrite: bool = False) -> None:
         assert isinstance(obj, (dict, self.model)), 'Invalid object passed'
 
         v = dict(obj)
