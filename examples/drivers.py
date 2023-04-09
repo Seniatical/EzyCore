@@ -13,7 +13,7 @@ class UserModel(Model):
     _config: Config = Config(search_by='id')
 
 
-driver = SQLiteDriver('./examples/test.sqlite', models={'users': UserModel})
+driver = SQLiteDriver('./test.sqlite', models={'users': UserModel})
 
 manager = Manager(locations=['users'], models={'users': UserModel})
 manager.populate_using_driver('users', driver=driver)
