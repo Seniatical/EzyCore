@@ -65,14 +65,14 @@ class PartialRef(Generic[_M]):
 
     @classmethod
     def validate(cls, v, field: ModelField):
-        type_ = field.outer_type_.__args__[0]
+        type_: Model = field.outer_type_.__args__[0]
 
         if isinstance(v, type_):
             return v
 
-        primary_key = type_._config.search_by
+        primary_key: str = type_._config.search_by
 
-        primary_field =  type_.__fields__.get(primary_key)
+        primary_field: ModelField = type_.__fields__.get(primary_key)
         valid_value, err = primary_field.validate(v, {}, loc=primary_key)
         if err:
             raise ValidationError([err], cls)
