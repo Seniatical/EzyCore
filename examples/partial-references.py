@@ -29,3 +29,4 @@ manager['tokens'].add({'id': 0, 'requests': 100, 'owner': 0})
 
 
 print(manager['tokens'].get(0))
+# Token(id=0 requests=100 owner=User(id=0, username='Foo'))
