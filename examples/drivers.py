@@ -6,22 +6,21 @@ from ezycore.models import Config, Model
 
 
 class UserModel(Model):
-    id: str
+    id: int
     username: str
     password: str
 
-    _config = Config(search_by='id')
+    _config: Config = Config(search_by='id')
 
 
-driver = SQLiteDriver('my_file.sqlite', models={'users': UserModel})
-driver.map_to_model(users='user_table')
+driver = SQLiteDriver('./examples/test.sqlite', models={'users': UserModel})
 
 manager = Manager(locations=['users'], models={'users': UserModel})
 manager.populate_using_driver('users', driver=driver)
 
 manager['users'].pretty_print()
 
-manager['users'].add({'id': 'SomeVeryRandomId', 'username': 'Bob', 'password': 'Ilikecheese123'})
+manager['users'].add({'id': 5, 'username': 'Gif', 'password': 'Giffy-5333?'})
 
 manager.export_segment('users', driver=driver)
 manager['users'].clear()
