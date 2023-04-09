@@ -93,11 +93,13 @@ class Driver(ABC):
         """
 
     @abstractmethod
-    def export(self, stream: Iterator[Union[dict, Model]], include: set, exclude: set) -> None:
+    def export(self, location: str, stream: Iterator[Union[dict, Model]], include: set, exclude: set) -> None:
         """ Exports data from any object supporting the `__next__` method
 
         Parameters
         ----------
+        location: str
+            Location to export data to
         stream: Iterator[Union[:class:`dict`, :class:`Model`]]
             An object which returns values to export
         include: :class:`set`

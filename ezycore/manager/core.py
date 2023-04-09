@@ -327,7 +327,7 @@ class Manager(BaseManager):
     def export_segment(self, location: str, driver: Driver = None, **driver_kwargs) -> None:
         seg = self.get_segment(location)
 
-        driver.export(seg, **driver_kwargs)
+        driver.export(location, seg, **driver_kwargs)
 
     ###########################################################################################
     ##
