@@ -23,6 +23,7 @@ manager = Manager(locations=['messages'], models={'messages': Message})
 manager['messages'].add({'id': 123, 'content': 'Foo', 'author': 'Foo'})
 
 print(manager['messages'].get(123))
+# Message(id=123, content='Foo', author='Foo')
 ```
 <p>
     View more examples over <a href="/examples">here</a>!
