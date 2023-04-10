@@ -28,13 +28,19 @@ jobs:
                 make -C docs clean
                 make -C docs html
             
-            - name: Deploy Docs
+            - name: Generate Docs
               run: |
                 cd docs/build/html
                 git init
                 touch .nojekyll
                 git add -A
-
-                git branch -m gh-pages
-                git commit -m "[ WORKFLOW ] Documentation Deploy"
-                git push https://${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+                git config --local user.email "${{ github.actor }}@github.com"
+                git config --local user.name "${{ github.actor }}"
+                git commit -m 'deploy'
+    
+            - name: Deploy Docs
+                uses: ad-m/github-push-action@v0.5.0
+                    with:
+                        github_token: ${{ secrets.GITHUB_TOKEN }}
+                        branch: gh-pages
+                        directory: ./docs/build/html
