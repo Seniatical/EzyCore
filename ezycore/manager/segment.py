@@ -200,6 +200,10 @@ class BaseSegment(ABC):
     @abstractmethod
     def last(self) -> Optional[Model]:
         """ Retrieves item which was last accessed """
+    
+    @abstractmethod
+    def first(self) -> Optional[Model]:
+        """ Retrieves the item which was most recently accessed """
 
     @abstractmethod
     def clear(self) -> None:
@@ -329,13 +333,13 @@ class Segment(BaseSegment):
     def remove(self, obj_key: Any, *default: Any) -> Optional[Model]:
         try:
             self.get(obj_key)       ## Checks if item exists and brings item at the back of queue
-        except KeyError as err:
+        except ValueError as err:
             if default:
                 return default[0] if len(default) == 1 else default
             raise err
 
         self.__queue.pop()
-        self.__data.pop(obj_key)
+        return self.__data.pop(obj_key)
 
     def update(self, obj_key: Any, **kwds) -> None:
         current = self.get(obj_key)
@@ -344,10 +348,15 @@ class Segment(BaseSegment):
 
         self.__data[obj_key] = self.model(**d)
 
-    def last(self) -> Optional[Model]:
+    def first(self) -> Optional[Model]:
         if self.size() == 0:
             return
         return self.__data[self.__queue[-1]]
+
+    def last(self) -> Optional[Model]:
+        if self.size() == 0:
+            return
+        return self.__data[self.__queue[0]]
 
     def clear(self) -> None:
         self.__position = 0
