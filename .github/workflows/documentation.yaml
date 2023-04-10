@@ -1,4 +1,4 @@
-name: Handle_Documentation
+name: docs
 
 on:
     push:
@@ -12,24 +12,24 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-            - uses: actions/checkout@v3
+              uses: actions/checkout@v3
 
             - name: Setup python
-            - uses: actions/setup-python@v3
+              uses: actions/setup-python@v3
 
             - name: Install dependencies
-            - run: |
+              run: |
                 python -m pip install sphinx -U 
                 python -m pip install sphinx_rtd_theme
                 python -m pip install sphinx_autoapi
 
             - name: Build Docs
-            - run: |
+              run: |
                 make -C docs clean
                 make -C docs html
             
             - name: Deploy Docs
-            - run: |
+              run: |
                 cd docs/build/html
                 git init
                 touch .nojekyll
