@@ -22,6 +22,9 @@ class AlternateTestModel(Model):
 
 
 class TestManager(unittest.TestCase):
+    def setUp(self) -> None:
+        self.manager = Manager(locations=['test'], models={'test': BasicTestModel})
+
     def test_segment_creation(self):
         seg = Segment(name='Foo', model=BasicTestModel)
 
@@ -36,10 +39,10 @@ class TestManager(unittest.TestCase):
             
             self.fail('Parameter verification failed')
         except SegmentError:
-            self.assertEqual(0, 0)
+            pass
 
     def test_basic_use(self):
-        manager = Manager(locations=['test'], models={'test': BasicTestModel})
+        manager = self.manager
 
         self.assertEqual(tuple(i.name for i in manager.segments()), ('test',), 'Creating manager segments failed')
         seg = Segment('Foo', BasicTestModel)
@@ -56,7 +59,7 @@ class TestManager(unittest.TestCase):
         self.assertEqual(s._get_manager(), None, 'Manager exists on independant segment')
 
     def test_models(self):
-        manager = Manager(locations=['test'], models={'test': BasicTestModel})
+        manager = self.manager
         
         self.assertEqual(tuple(i.__name__ for i in manager.models()), ('BasicTestModel',), 'Manager failed adding model')
         manager.update_segment('test', model=AlternateTestModel)
@@ -68,3 +71,41 @@ class TestManager(unittest.TestCase):
         seg.update_segment(model=BasicTestModel)
 
         self.assertEqual(tuple(i.__name__ for i in manager.models()), ('BasicTestModel',), 'Manager failed adding model')
+
+    def test_methods(self):
+        ## Dict methods
+        test = self.manager['test']
+        self.assertEqual(test, self.manager.get_segment('test'), 'Failed __getitem__')
+
+        try:
+            self.manager['test'] = 'Bar'
+            return self.fail('Failed __setitem__, invalid segment created')
+        except TypeError:
+            self.manager['test'] = Segment('Bar', model=BasicTestModel)
+
+        self.assertEqual(self.manager.get_segment('Bar').name, 'Bar', 'Failed __setitem__')
+
+        del self.manager['Bar']
+        self.assertEqual(tuple(i for i in self.manager.models()), tuple(), 'Failed __delitem__')
+
+        self.manager.add_segment('test', model=BasicTestModel)
+
+        ## Iterations
+        self.assertEqual(self.manager, iter(self.manager))
+
+        d = []
+        for seg in self.manager:
+            d.append(seg.name)
+        self.assertEqual(tuple(d), tuple(i.name for i in self.manager.segments()), 'Failed __next__')
+
+        ## Contains
+        try:
+            seg in self.manager
+            self.fail('Failed __contains__, invalid comparison made')
+        except AssertionError:
+            pass
+        self.assertTrue('test' in self.manager, 'Failed __contains__')
+
+        ## Enter exit
+        with self.manager as M:
+            self.assertEqual(M, self.manager, 'Failed __enter__')
