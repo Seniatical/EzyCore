@@ -4,3 +4,7 @@ class Full(Exception):
 
 class ModalMissingConfig(Exception):
     """ Raised when model being used doesn't contain a ``_config`` var """
+
+
+class SegmentError(Exception):
+    """ Raised when an error occurs within a segment """

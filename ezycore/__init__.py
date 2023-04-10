@@ -14,3 +14,7 @@ from .models import (
     Config,
     PartialRef
 )
+
+__version_info__ = ('0', '0', '1')
+__release_type__ = 'alpha'
+__version__ = 'v0.2.1-b4'
