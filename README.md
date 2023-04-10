@@ -7,6 +7,11 @@ A highly customizable cache manager for python
 * Out of box support for many popular databases, such as SQLite, MongoDB and MySQL
 * Built on strict ABC classes, allows tons of flexibility and code customisation
 
+## Installation
+```sh
+pip install git+https://github.com/Seniatical/EzyCore
+```
+
 ## Example
 ```py
 from ezycore import Config, Manager, Model
