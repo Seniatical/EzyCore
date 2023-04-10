@@ -70,7 +70,7 @@ class BaseSegment(ABC):
                 __mod = self.__manager._modify_mod()
                 __mod.pop(self.__name, None)
                 __mod[self.__name] = model
-            self.model = model
+            self.__model = model
 
         if name != ...:
             assert type(name) == str, 'Name of segment must be a string'
