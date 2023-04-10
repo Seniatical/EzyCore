@@ -12,7 +12,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
-              uses: actions/checkout@v2
+              uses: actions/checkout@v3
 
             - name: Setup python
               uses: actions/setup-python@v3
@@ -36,6 +36,8 @@ jobs:
                 touch .nojekyll
 
                 git add -A
+
+                git config --global --add safe.directory /github/workspace/docs/build/html
                 git config --local user.email "action@github.com"
                 git config --local user.name "Github Action"
 
