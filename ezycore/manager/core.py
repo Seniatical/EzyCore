@@ -266,7 +266,7 @@ class BaseManager(ABC):
         self.remove_segment(segment)
 
     def __contains__(self, segment: str) -> None:
-        assert type(segment) != str, f"Cannot compare str with {segment.__class__.__name__}"
+        assert type(segment) == str, f"Cannot compare str with {segment.__class__.__name__}"
         return segment in self.__locations
 
     def __enter__(self):
