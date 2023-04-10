@@ -143,18 +143,24 @@ class BaseManager(ABC):
         segment: Union[:class:`str`, :class:`BaseSegment`]
             Segment to add
         **kwds:
-            If segment being added passed as string, additional kwargs to control creation
+            If segment being added passed as string, 
+            additional kwargs to control creation
+
+            .. note::
+                `model` kwarg MUST be provided
         """
 
     @abstractmethod
-    def remove_segment(self, location: str) -> None:
+    def remove_segment(self, location: str, *default) -> Optional[Segment]:
         """ Removes an existing segment from manager,
-            Should raise `ValueError` if segment doesn't exist
+            Should raise `ValueError` if segment doesn't exist, unless default is provided
 
         Parameters
         ----------
         location: :class:`str`
             Name of segment to remove
+        *default: Any
+            Value to return instead of segment
         """
 
     @abstractmethod
@@ -243,7 +249,7 @@ class BaseManager(ABC):
     ###########################################################################################
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(locations={self.__k})"
+        return f"{self.__class__.__name__}(locations={self._k})"
 
     def __getitem__(self, segment: str) -> Segment:
         try:
@@ -251,14 +257,16 @@ class BaseManager(ABC):
         except KeyError as err:
             raise KeyError("Segment not found") from err
 
-    def __setitem__(self, segment: str, new_segment: Union[str, Segment]) -> None:
+    def __setitem__(self, segment: str, new_segment: Segment) -> None:
+        if not isinstance(new_segment, Segment):
+            raise TypeError('new_segment must of type "Segment" not "{}"'.format(new_segment.__class__.__name__))
         self.replace_segment(segment, new_segment)
 
     def __delitem__(self, segment: str) -> None:
         self.remove_segment(segment)
 
     def __contains__(self, segment: str) -> None:
-        assert type(segment) == str, f"Cannot compare str with {type(segment).__name__}"
+        assert type(segment) != str, f"Cannot compare str with {segment.__class__.__name__}"
         return segment in self.__locations
 
     def __enter__(self):
@@ -345,17 +353,20 @@ class Manager(BaseManager):
             raise ValueError('Segment already exists')
 
         if (type(segment) == str):
-            _loc[seg_name] = Segment(kwds + {'name': seg_name})
+            kwds.update(name=seg_name)
+            _loc[seg_name] = Segment(**kwds)
         else:
             _loc[seg_name] = segment
         _loc[seg_name]._set_manager(self)
         _mod[seg_name] = _loc[seg_name].model
         self._k = tuple(_loc)
 
-    def remove_segment(self, location: str) -> Segment:
+    def remove_segment(self, location: str, *default) -> Optional[Segment]:
         _loc = self._modify_loc()
         _mod = self._modify_mod()
         if location not in _loc:
+            if default:
+                return default[0]
             raise ValueError('Segment not found')
         
         rv = _loc.pop(location)
