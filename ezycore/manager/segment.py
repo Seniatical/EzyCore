@@ -2,7 +2,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 
 from ezycore.models import Model, M
-from ezycore.exceptions import Full
+from ezycore.exceptions import Full, SegmentError
 from typing import Any, Iterable, Optional, Union
 
 
@@ -29,17 +29,20 @@ class BaseSegment(ABC):
         max_size: int = 1000,
         make_space: bool = True
     ) -> None:
-        assert type(name) == str, 'Name of segment must be a string'
-        assert issubclass(model, Model), 'modal provided must inherit the Modal class'
-        assert type(max_size) == int, 'Max size must be an integer'
-        assert type(make_space) == bool, 'Value for make space must be a boolean'
+        try:
+            assert type(name) == str, 'Name of segment must be a string'
+            assert issubclass(model, Model), 'modal provided must inherit the Modal class'
+            assert type(max_size) == int, 'Max size must be an integer'
+            assert type(make_space) == bool, 'Value for make space must be a boolean'
+        except (AssertionError, TypeError) as err:
+            raise SegmentError('Invalid args provided') from err
 
 
         self.__name = name
         self.__max_size = max_size
         self.__model = model
         self.__ms = make_space
-        self.manager = None
+        self.__manager = None
 
     def update_segment(self, 
                *,
@@ -63,21 +66,21 @@ class BaseSegment(ABC):
         """
         if model != ...:
             assert issubclass(model, Model), 'modal provided must inherit the Modal class'
-            if self.manager:
-                __mod = self.manager._modify_mod()
-                __mod.pop(self.__name)
+            if self.__manager:
+                __mod = self.__manager._modify_mod()
+                __mod.pop(self.__name, None)
                 __mod[self.__name] = model
             self.model = model
 
         if name != ...:
             assert type(name) == str, 'Name of segment must be a string'
-            if self.manager:
-                __loc = self.manager._modify_loc()
-                __loc.pop(self.__name)
+            if self.__manager:
+                __loc = self.__manager._modify_loc()
+                __loc.pop(self.__name, None)
                 __loc[name] = self
 
-                __mod = self.manager._modify_mod()
-                _m = __mod.pop(self.__name)
+                __mod = self.__manager._modify_mod()
+                _m = __mod.pop(self.__name, None)
                 __mod[name] = _m
             self.__name = name
 
@@ -89,7 +92,18 @@ class BaseSegment(ABC):
             self.__ms = make_space 
         
     def _set_manager(self, manager: Any) -> None:
-        self.manager = manager
+        if not self.__manager:
+            self.__manager = manager
+        else:
+            raise ValueError('Segment already set to manager')
+
+    def _del_manager(self) -> None:
+        if not self.__manager:
+            raise ValueError('No manager set')
+        self.__manager = None
+
+    def _get_manager(self) -> Optional[Any]:
+        return self.__manager
 
     ###########################################################################################
     ##
@@ -264,11 +278,11 @@ class Segment(BaseSegment):
         try:
             data: Model = self.__data[obj_key]
             for partial in data.__ezycore_partials__:
-                if not self.manager:
+                if not self.__manager:
                     break
                 prim_key = getattr(data, partial)
                 try:
-                    setattr(data, partial, self.manager[data._config.partials[partial]].get(prim_key))
+                    setattr(data, partial, self.__manager[data._config.partials[partial]].get(prim_key))
                 except ValueError:
                     pass
 
