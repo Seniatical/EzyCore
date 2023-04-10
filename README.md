@@ -1,11 +1,11 @@
 # EzyCore
 A highly customizable cache manager for python
 
-### Why use EzyCore
-* Implements proper data structures using pydantic 
-* Supports partial referencing between caches
-* Out of box support for many popular databases, such as SQLite, MongoDB and MySQL
-* Built on strict ABC classes, allows tons of flexibility and code customisation
+### Why choose EzyCore
+* Enforces use of proper structured data thanks to PyDantic
+* Comes with out of box support for many popular databases such as **SQLite3** and more!
+* Built on strict ABC classes, supports flexibility and community made objects!
+* Fast efficient and easy to use
 
 ## Installation
 ```sh
