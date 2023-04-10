@@ -2,11 +2,7 @@ name: Handle_Documentation
 
 on:
     push:
-        branches: [ main ]
-    pull_requests:
-        branches: [ main ]
-    workflow_dispatch:
-        branches: [ main ]    
+        branches: [ main ]  
 
 permissions:
     contents: write
