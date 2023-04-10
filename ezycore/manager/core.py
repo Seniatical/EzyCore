@@ -51,7 +51,7 @@ class BaseManager(ABC):
 
             self.__locations[v]._set_manager(self)
 
-        self.__k: Tuple[str] = tuple(self.__locations)
+        self._k: Tuple[str] = tuple(self.__locations)
 
     def _modify_loc(self) -> dict:
         return self.__locations
@@ -273,10 +273,10 @@ class BaseManager(ABC):
         return self
 
     def __next__(self):
-        if self.__index >= len(self.__k):
+        if self.__index >= len(self._k):
             raise StopIteration()
         self.__index += 1
-        return self.__locations[self.__k[self.__index - 1]]
+        return self.__locations[self._k[self.__index - 1]]
 
 ########################################################################
 ##                                                                    ##
@@ -337,23 +337,28 @@ class Manager(BaseManager):
 
     def add_segment(self, segment: Union[str, Segment], **kwds) -> None:
         seg_name = getattr(segment, 'name', segment)
+        _loc = self._modify_loc()
 
         assert type(seg_name) == str
         if self.get_segment(seg_name, defer=True):
             raise ValueError('Segment already exists')
 
         if (type(segment) == str):
-            self.__locations[seg_name] = Segment(kwds + {'name': seg_name})
+            _loc[seg_name] = Segment(kwds + {'name': seg_name})
         else:
-            self.__locations[seg_name] = segment
-        self.__k = tuple(self.__locations)
+            _loc[seg_name] = segment
+        _loc[seg_name]._set_manager(self)
+        self._k = tuple(_loc)
 
     def remove_segment(self, location: str) -> Segment:
-        if location not in self.__locations:
+        _loc = self._modify_loc()
+        if location not in _loc:
             raise ValueError('Segment not found')
         
-        rv = self.__locations.pop(location)
-        self.__k = tuple(self.__locations)
+        rv = _loc.pop(location)
+        rv._del_manager()
+
+        self._k = tuple(_loc)
         return rv
 
     def update_segment(self, location: str, **data) -> Segment:
