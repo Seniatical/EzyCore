@@ -338,6 +338,7 @@ class Manager(BaseManager):
     def add_segment(self, segment: Union[str, Segment], **kwds) -> None:
         seg_name = getattr(segment, 'name', segment)
         _loc = self._modify_loc()
+        _mod = self._modify_mod()
 
         assert type(seg_name) == str
         if self.get_segment(seg_name, defer=True):
@@ -348,15 +349,18 @@ class Manager(BaseManager):
         else:
             _loc[seg_name] = segment
         _loc[seg_name]._set_manager(self)
+        _mod[seg_name] = _loc[seg_name].model
         self._k = tuple(_loc)
 
     def remove_segment(self, location: str) -> Segment:
         _loc = self._modify_loc()
+        _mod = self._modify_mod()
         if location not in _loc:
             raise ValueError('Segment not found')
         
         rv = _loc.pop(location)
         rv._del_manager()
+        _mod.pop(rv.name, None)
 
         self._k = tuple(_loc)
         return rv
