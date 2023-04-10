@@ -15,8 +15,14 @@ class BasicTestModel(Model):
     _config: Config = {'search_by': 'field_2'}
 
 
+class AlternateTestModel(Model):
+    field_1: int
+
+    _config: Config = {'search_by': 'field_1'}
+
+
 class TestManager(unittest.TestCase):
-    def test_segments(self):
+    def test_segment_creation(self):
         seg = Segment(name='Foo', model=BasicTestModel)
 
         self.assertEqual((seg.name, seg.model, seg.max_size, seg.make_space), ('Foo', BasicTestModel, 1000, True), 'Creating basic segment failed')
@@ -48,3 +54,17 @@ class TestManager(unittest.TestCase):
         self.assertEqual(tuple(i.name for i in manager.segments()), ('test',), 'Deleting segments failed')
 
         self.assertEqual(s._get_manager(), None, 'Manager exists on independant segment')
+
+    def test_models(self):
+        manager = Manager(locations=['test'], models={'test': BasicTestModel})
+        
+        self.assertEqual(tuple(i.__name__ for i in manager.models()), ('BasicTestModel',), 'Manager failed adding model')
+        manager.update_segment('test', model=AlternateTestModel)
+
+        self.assertEqual(tuple(i.__name__ for i in manager.models()), ('AlternateTestModel',), 'Manager failed adding model')
+        self.assertEqual(manager._modify_mod()['test'], AlternateTestModel)
+
+        seg = manager.get_segment('test')
+        seg.update_segment(model=BasicTestModel)
+
+        self.assertEqual(tuple(i.__name__ for i in manager.models()), ('BasicTestModel',), 'Manager failed adding model')
