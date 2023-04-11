@@ -1,4 +1,4 @@
-<img src="/docs/source/_static/ec_l2_nws.png">
+<img src="/docs/source/_static/el_l2_nws.png">
 
 ***
 
