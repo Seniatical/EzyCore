@@ -1,4 +1,4 @@
-<img src="/docs/source/_static/el_l2_nws.png">
+<img src="/docs/source/_static/el_l2_nws.png" style="display: block; margin-left: auto; margin-right: auto; width: 50%;">
 
 ***
 
