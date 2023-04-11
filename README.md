@@ -2,9 +2,9 @@
     <img src="/docs/source/_static/el_l2_nws.png">
 </p>
 
-<p align="center">A highly customizable cache manager for python</p>
-
 ***
+
+<h3 align="center">A highly customisable cache manager for python</h3>
 
 # Why choose EzyCore
 * Enforces use of proper structured data thanks to PyDantic
