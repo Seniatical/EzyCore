@@ -1,4 +1,7 @@
-# EzyCore
+<img src="/docs/source/_static/ec_l2.png">
+
+***
+
 A highly customizable cache manager for python
 
 ### Why choose EzyCore
