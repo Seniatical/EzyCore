@@ -1,10 +1,10 @@
-<img src="/docs/source/_static/ec_l2.png">
+<img src="/docs/source/_static/ec_l2_nws.png">
 
 ***
 
-A highly customizable cache manager for python
+<p style="text-align: center;">A highly customizable cache manager for python</p>
 
-### Why choose EzyCore
+## Why choose EzyCore
 * Enforces use of proper structured data thanks to PyDantic
 * Comes with out of box support for many popular databases such as **SQLite3** and more!
 * Built on strict ABC classes, supports flexibility and community made objects!
