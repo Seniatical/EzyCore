@@ -1,8 +1,10 @@
-<img src="/docs/source/_static/el_l2_nws.png" style="display: block; margin-left: auto; margin-right: auto; width: 50%;">
+<p align="center">
+    <img src="/docs/source/_static/el_l2_nws.png">
+</p>
 
 ***
 
-<p style="text-align: center;">A highly customizable cache manager for python</p>
+<p align="center">A highly customizable cache manager for python</p>
 
 ## Why choose EzyCore
 * Enforces use of proper structured data thanks to PyDantic
