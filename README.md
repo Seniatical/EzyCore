@@ -17,7 +17,7 @@
 pip install git+https://github.com/Seniatical/EzyCore
 ```
 
-# Example
+# Basic Example
 ```py
 from ezycore import Config, Manager, Model
 
