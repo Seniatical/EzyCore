@@ -51,6 +51,12 @@ Controlling :meth:`BaseSegment.get`
     [BaseSegment].get(..., exclude_none=True)
     # Ignore any fields set to "None"
 
+.. code-block:: py
+    :caption: Returns fields ``f1`` and ``f2``
+
+    [BaseSegment].get(..., 'f1', include={'f1', 'f2'})
+    # Ignores any args in the "*include" field instead uses the include kwarg
+
 Examples
 --------
 
@@ -67,7 +73,7 @@ A basic user object which excludes fields ``_config`` and ``password`` when fetc
         created_at: datetime.datetime
         updated_at: datetime.datetime
 
-        _config: Config = dict(search_by='id', exclude={'_config', 'password'})
+        _config: Config = dict(search_by='id', exclude={'password'})
 
 
 Intermediate
@@ -86,7 +92,7 @@ Implements partial referencing to fetch results from the ``users`` segment
 
         _config: Config = dict(
             search_by='id', 
-            exclude={'_config': True, 'user': {'password'}}
+            exclude={'owner': {'password'}}
             partials={'owner': 'users'})
 
 References
