@@ -7,9 +7,12 @@ build:
         python: "3.9"
 
 sphinx:
+    builder: html
     configuration: docs/conf.py
+    fail_on_warning: true
 
 python:
     install:
-    - requirements: docs/dev-requirements.txt
-    - method: pip
+        - requirements: dev-requirements.txt
+        - method: pip
+          path: .
