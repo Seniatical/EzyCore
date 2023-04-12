@@ -88,6 +88,7 @@ class Driver(ABC):
             Keyword arguments for mapping from in-program name to database name.
             
             .. code-block:: py
+            
                 d = Driver(..., models={'users': UserModel})
                 d.map_to_model(users='my_table')
         """
