@@ -150,13 +150,19 @@ class BaseSegment(ABC):
         """ Returns an iterator of all values in segment """
 
     @abstractmethod
-    def get(self, obj_key: Any, *flags, default: Any = None) -> Optional[Model]:
+    def get(self, obj_key: Any, *flags, default: Any = ..., **kwds) -> Optional[Model]:
         """ Retrieves an element from cache
 
         Parameters
         ----------
         obj_key: Any
-            value to search for, set in `Model.__config__.search_by`
+            value to search for, set in `Model._config.search_by`
+        *flags
+            elements to include in cache, read more in the :class:`Model`'s section
+        default: Any
+            default value if element not found
+        **kwds:
+            export kwargs, read more `here <https://docs.pydantic.dev/usage/exporting_models/>`_
         """
 
     @abstractmethod
@@ -281,28 +287,54 @@ class Segment(BaseSegment):
         ## Simply retrieves value, no queue handling here
         try:
             data: Model = self.__data[obj_key]
+            manager = self._get_manager()
             for partial in data.__ezycore_partials__:
-                if not self.__manager:
+                if not manager:
                     break
                 prim_key = getattr(data, partial)
                 try:
-                    setattr(data, partial, self.__manager[data._config.partials[partial]].get(prim_key))
+                    setattr(data, partial, manager[data._config.partials[partial]].get(prim_key))
                 except ValueError:
                     pass
-
-            if not include:
+            
+            if not include and not kwds:
                 return data
             if '*' in include:
-                kwds.update({'exclude': kwds.get('exclude', set())})
-                kwds['exclude'].add('config')
-                return data.dict(**kwds)
-            return data.dict(include=set(include), **kwds)
+                return data.dict()
+
+            inc = dict()
+            if include:
+                for field in include:
+                    if isinstance(field, str):
+                        inc[field] = True
+                    else:
+                        inc[field[0]] = field[1]
+
+            kwds['exclude'] = kwds.get('exclude', dict())
+            kwds['include'] = kwds.get('include') or inc
+
+            if isinstance(kwds['exclude'], set) and isinstance(data._config.exclude, set):
+                return data.dict(include=inc, **kwds)
+            elif isinstance(kwds['exclude'], set) and isinstance(data._config.exclude, dict):
+                kwds['exclude'] = dict(**data._config.exclude)
+                for field in kwds['exclude']:
+                    kwds['exclude'][field] = True
+            else:
+                for field in data._config.exclude:
+                    kwds['exclude'][field] = True
+            
+            if not kwds['include']:
+                kwds.pop('include')
+            if not kwds['exclude']:
+                kwds.pop('exclude')
+            return data.dict(**kwds)
+
         except KeyError as err:
             if default:
                 return default
             raise KeyError('object not found') from err
 
-    def get(self, obj_key: Any, *flags, default: Any = ...) -> Optional[Model]:
+    def get(self, obj_key: Any, *flags, default: Any = ..., **kwds) -> Optional[Model]:
         try:
             self.__queue.remove(obj_key)
         except ValueError as err:
@@ -311,7 +343,7 @@ class Segment(BaseSegment):
             return default
         self.__queue.append(obj_key)
 
-        return self._get(obj_key, *flags, default=default)
+        return self._get(obj_key, *flags, default=default, **kwds)
 
     def add(self, obj: M, *, overwrite: bool = False) -> None:
         assert isinstance(obj, (dict, self.model)), 'Invalid object passed'
