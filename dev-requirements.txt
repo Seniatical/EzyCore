@@ -3,3 +3,4 @@ sphinx==5.1.1
 black==22.3.0
 flake8==5.0.4
 mypy==0.950
+git+https://github.com/Seniatical/EzyCore
