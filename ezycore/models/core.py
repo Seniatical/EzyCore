@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Generic, Dict, Iterator, TypeVar
+from typing import Generic, Dict, Iterator, TypeVar, Union
 
 from pydantic import BaseModel, ValidationError
 from pydantic.fields import ModelField
@@ -7,12 +7,28 @@ from ezycore.exceptions import ModalMissingConfig
 
 
 class Config(BaseModel):
+    """\
+    Configuration class used by the ezycore module. 
+    Used to customise and control how ezycore behaves with segments and models
+
+    Parameters
+    ----------
+    search_by: :class:`str`
+        Which key to store as the primary key
+
+        .. warning::
+            This field **MUST** be **UNIQUE**
+    exclude: Union[:class:`dict`, :class:`set`]
+        Fields to exclude from being returned when being fetched
+    partials: Dict[:class:`str`, :class:`str`]
+        Mapping of partial vars to segment names.
+    """
     search_by: str
-    exclude: set = {'_config'}
+    exclude: Union[dict, set] = {'_config'}
     partials: Dict[str, str] = dict()
 
 
-class Model(BaseModel, arbitrary_types_allowed=True):
+class Model(BaseModel):
     __ezycore_partials__: tuple = None
 
     def _read_partials(cls) -> Iterator[str]:
