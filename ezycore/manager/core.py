@@ -167,7 +167,7 @@ class BaseManager(ABC):
     def update_segment(self, location: str, **data) -> BaseSegment:
         """ Updates an existing segment to handle new data
 
-        Paramaters
+        Parameters
         ----------
         location: :class:`str`
             Name of segment to update
