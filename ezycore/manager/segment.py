@@ -326,7 +326,7 @@ class Segment(BaseSegment):
     def values(self) -> Iterable[Model]:
         return iter(self.__data.values())
 
-    def _get(self, obj_key: Any, *include, default: Any = None, **export_kwds) -> Optional[Model]:
+    def _get(self, obj_key: Any, *include, default: Any = None, ignore: bool = False, **export_kwds) -> Optional[Model]:
         ## Simply retrieves value, no queue handling here
         try:
             data: Model = self.__data[obj_key]
@@ -340,7 +340,7 @@ class Segment(BaseSegment):
                 except ValueError:
                     pass
             
-            if not include and not export_kwds:
+            if (not include and not export_kwds and not self.model._config.exclude) or ignore:
                 return data
             if '*' in include:
                 return data.dict()
@@ -391,7 +391,7 @@ class Segment(BaseSegment):
         for key in self.__queue[::-1]:
             if len(results) >= limit and limit > 0:
                 break
-            works = func(self._get(key))
+            works = func(self._get(key, ignore=True))
             if not works:
                 continue
             results.append(self.get(key, *fields, **export_kwds))
@@ -405,7 +405,7 @@ class Segment(BaseSegment):
         for key in self.__queue[::-1]:
             if len(results) >= limit and limit > 0:
                 break
-            works = re.match(str(getattr(self.get(key), search_key)))
+            works = re.match(str(getattr(self._get(key, ignore=True), search_key)))
             if not works:
                 continue
             results.append(self.get(key, *fields, **export_kwds))
