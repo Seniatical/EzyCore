@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from ezycore.models import Model, M
 from ezycore.exceptions import Full, SegmentError
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Union
 
 
 class BaseSegment(ABC):
@@ -150,7 +150,7 @@ class BaseSegment(ABC):
         """ Returns an iterator of all values in segment """
 
     @abstractmethod
-    def get(self, obj_key: Any, *flags, default: Any = ..., **kwds) -> Optional[Model]:
+    def get(self, obj_key: Any, *flags, default: Any = ..., **export_kwds) -> Optional[Model]:
         """ Retrieves an element from cache
 
         Parameters
@@ -161,7 +161,47 @@ class BaseSegment(ABC):
             elements to include in cache, read more in the :class:`Model`'s section
         default: Any
             default value if element not found
-        **kwds:
+        **export_kwds:
+            export kwargs, read more `here <https://docs.pydantic.dev/usage/exporting_models/>`_
+        """
+
+    @abstractmethod
+    def search(self, func: Callable[[Model], bool], *fields, limit: int = -1, **export_kwds) -> Iterable[M]:
+        """ Searches for elements matching query in cache
+
+        Parameters
+        ----------
+        func: Callable[[:class:`Model`], :class:`bool`]
+            Function which returns whether element is needed
+        *fields
+            List of fields to return from model
+        limit: :class:`int`
+            Number of results to restrict search to, 
+            if < 0 no limit is set.
+        **export_kwds:
+            export kwargs, read more `here <https://docs.pydantic.dev/usage/exporting_models/>`_
+        """
+
+    @abstractmethod
+    def search_using_re(self, expr: str, *fields, key: str = ..., limit: int = -1, **export_kwds) -> Iterable[M]:
+        """Searches for elements using regular expressions
+
+        .. warning::
+
+            Converts all values to :class:`str` using the ``str()`` func
+
+        Parameters
+        ----------
+        expr: :class:`str`
+            Regular expression to use
+        *fields
+            List of fields to return from model
+        key: :class:`str`
+            Name of field to use, defaults to :attr:`Config.search_by`
+        limit: :class:`int`
+            Number of results to restrict search to, 
+            if < 0 no limit is set.
+        **export_kwds:
             export kwargs, read more `here <https://docs.pydantic.dev/usage/exporting_models/>`_
         """
 
@@ -283,7 +323,7 @@ class Segment(BaseSegment):
     def values(self) -> Iterable[Model]:
         return iter(self.__data.values())
 
-    def _get(self, obj_key: Any, *include, default: Any = None, **kwds) -> Optional[Model]:
+    def _get(self, obj_key: Any, *include, default: Any = None, **export_kwds) -> Optional[Model]:
         ## Simply retrieves value, no queue handling here
         try:
             data: Model = self.__data[obj_key]
@@ -297,7 +337,7 @@ class Segment(BaseSegment):
                 except ValueError:
                     pass
             
-            if not include and not kwds:
+            if not include and not export_kwds:
                 return data
             if '*' in include:
                 return data.dict()
@@ -310,31 +350,29 @@ class Segment(BaseSegment):
                     else:
                         inc[field[0]] = field[1]
 
-            kwds['exclude'] = kwds.get('exclude', dict())
-            kwds['include'] = kwds.get('include') or inc
+            export_kwds['exclude'] = export_kwds.get('exclude', dict())
+            export_kwds['include'] = export_kwds.get('include') or inc
 
-            if isinstance(kwds['exclude'], set) and isinstance(data._config.exclude, set):
-                return data.dict(include=inc, **kwds)
-            elif isinstance(kwds['exclude'], set) and isinstance(data._config.exclude, dict):
-                kwds['exclude'] = dict(**data._config.exclude)
-                for field in kwds['exclude']:
-                    kwds['exclude'][field] = True
+            if isinstance(export_kwds['exclude'], set) and isinstance(data._config.exclude, set):
+                return data.dict(include=inc, **export_kwds)
+            elif isinstance(export_kwds['exclude'], set) and isinstance(data._config.exclude, dict):
+                export_kwds['exclude'] = dict(**data._config.exclude)
+                for field in export_kwds['exclude']:
+                    export_kwds['exclude'][field] = True
             else:
                 for field in data._config.exclude:
-                    kwds['exclude'][field] = True
+                    export_kwds['exclude'][field] = True
             
-            if not kwds['include']:
-                kwds.pop('include')
-            if not kwds['exclude']:
-                kwds.pop('exclude')
-            return data.dict(**kwds)
+            if not export_kwds['include']:      export_kwds.pop('include')
+            if not export_kwds['exclude']:      export_kwds.pop('exclude')
+            return data.dict(**export_kwds)
 
         except KeyError as err:
             if default:
                 return default
             raise KeyError('object not found') from err
 
-    def get(self, obj_key: Any, *flags, default: Any = ..., **kwds) -> Optional[Model]:
+    def get(self, obj_key: Any, *flags, default: Any = ..., **export_kwds) -> Optional[Model]:
         try:
             self.__queue.remove(obj_key)
         except ValueError as err:
@@ -343,7 +381,13 @@ class Segment(BaseSegment):
             return default
         self.__queue.append(obj_key)
 
-        return self._get(obj_key, *flags, default=default, **kwds)
+        return self._get(obj_key, *flags, default=default, **export_kwds)
+
+    def search(self, func: Callable[[Model], bool], *fields, limit: int = -1, **export_kwds) -> Iterable[M]:
+        return super().search(func, *fields, limit=limit, **export_kwds)
+
+    def search_using_re(self, expr: str, *fields, key: str = ..., limit: int = -1, **export_kwds) -> Iterable[M]:
+        return super().search_using_re(expr, *fields, key=key, limit=limit, **export_kwds)
 
     def add(self, obj: M, *, overwrite: bool = False) -> None:
         assert isinstance(obj, (dict, self.model)), 'Invalid object passed'
