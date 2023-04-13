@@ -384,7 +384,15 @@ class Segment(BaseSegment):
         return self._get(obj_key, *flags, default=default, **export_kwds)
 
     def search(self, func: Callable[[Model], bool], *fields, limit: int = -1, **export_kwds) -> Iterable[M]:
-        return super().search(func, *fields, limit=limit, **export_kwds)
+        results = list()
+        for key in self.__queue[::-1]:
+            if len(results) >= limit and limit > 0:
+                break
+            works = func(self._get(key))
+            if not works:
+                continue
+            results.append(self.get(key, *fields, **export_kwds))
+        return results
 
     def search_using_re(self, expr: str, *fields, key: str = ..., limit: int = -1, **export_kwds) -> Iterable[M]:
         return super().search_using_re(expr, *fields, key=key, limit=limit, **export_kwds)
