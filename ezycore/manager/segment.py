@@ -342,7 +342,8 @@ class Segment(BaseSegment):
             
             if ignore:      
                 return data
-            if not include or not export_kwds or not self.model._config.exclude:
+
+            if not (include or export_kwds or self.model._config.exclude):
                 return data
             if '*' in include:      
                 return data.dict()
