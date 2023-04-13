@@ -71,6 +71,24 @@ class TestSegments(unittest.TestCase):
         except ValidationError:
             pass
 
+    def test_segment_searches(self):
+        d1 = dict(field_1='Foo', field_2=10, field_3=False)
+        d2 = dict(field_1='Bar', field_2=5, field_3=True)
+        d3 = dict(field_1='Foo', field_2=50, field_3=True)
+
+        self.segment.add(d1)
+        self.segment.add(d2)
+        self.segment.add(d3)
+
+        self.assertEqual(
+            self.segment.search(lambda m: m.field_1 == 'Foo', 'field_2'),
+            [{'field_2': 50}, {'field_2': 10}], 'Failed search method')
+
+        self.assertEqual(
+            self.segment.search_using_re('^Bar$', 'field_2', key='field_1'),
+            [{'field_2': 5}], 'Failed regex search'
+        )
+
     def test_segment_cache_invalidation(self):
         for i in range(10):
             self.segment.add(dict(field_1='Foo', field_2=i, field_3=False))
