@@ -184,7 +184,7 @@ class BaseSegment(ABC):
         """
 
     @abstractmethod
-    def search_using_re(self, expr: str, flags: int = 0, *fields, key: str = ..., limit: int = -1, **export_kwds) -> Iterable[M]:
+    def search_using_re(self, expr: str, *fields, flags: int = 0, key: str = ..., limit: int = -1, **export_kwds) -> Iterable[M]:
         """Searches for elements using regular expressions
 
         .. warning::
@@ -400,7 +400,7 @@ class Segment(BaseSegment):
             results.append(self.get(key, *fields, **export_kwds))
         return results
 
-    def search_using_re(self, expr: str, flags: int = 0, *fields, key: str = None, limit: int = -1, **export_kwds) -> Iterable[M]:
+    def search_using_re(self, expr: str, *fields, flags: int = 0, key: str = None, limit: int = -1, **export_kwds) -> Iterable[M]:
         results = list()
         search_key = key or self.model._config.search_by
         re = _compile(expr, flags)
