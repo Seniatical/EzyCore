@@ -24,7 +24,7 @@ class Config(BaseModel):
         Mapping of partial vars to segment names.
     """
     search_by: str
-    exclude: Union[dict, set] = {'_config'}
+    exclude: Union[dict, set] = set()
     partials: Dict[str, str] = dict()
 
 
