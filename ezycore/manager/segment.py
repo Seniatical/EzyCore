@@ -4,6 +4,7 @@ from abc import ABC, abstractmethod
 from ezycore.models import Model, M
 from ezycore.exceptions import Full, SegmentError
 from typing import Any, Callable, Iterable, Optional, Union
+from re import _compile
 
 
 class BaseSegment(ABC):
@@ -183,7 +184,7 @@ class BaseSegment(ABC):
         """
 
     @abstractmethod
-    def search_using_re(self, expr: str, *fields, key: str = ..., limit: int = -1, **export_kwds) -> Iterable[M]:
+    def search_using_re(self, expr: str, flags: int = 0, *fields, key: str = ..., limit: int = -1, **export_kwds) -> Iterable[M]:
         """Searches for elements using regular expressions
 
         .. warning::
@@ -194,6 +195,8 @@ class BaseSegment(ABC):
         ----------
         expr: :class:`str`
             Regular expression to use
+        flags: :class:`int`
+            Flags for expression
         *fields
             List of fields to return from model
         key: :class:`str`
@@ -394,8 +397,19 @@ class Segment(BaseSegment):
             results.append(self.get(key, *fields, **export_kwds))
         return results
 
-    def search_using_re(self, expr: str, *fields, key: str = ..., limit: int = -1, **export_kwds) -> Iterable[M]:
-        return super().search_using_re(expr, *fields, key=key, limit=limit, **export_kwds)
+    def search_using_re(self, expr: str, flags: int = 0, *fields, key: str = None, limit: int = -1, **export_kwds) -> Iterable[M]:
+        results = list()
+        search_key = key or self.model._config.search_by
+        re = _compile(expr, flags)
+
+        for key in self.__queue[::-1]:
+            if len(results) >= limit and limit > 0:
+                break
+            works = re.match(str(getattr(self.get(key), search_key)))
+            if not works:
+                continue
+            results.append(self.get(key, *fields, **export_kwds))
+        return results
 
     def add(self, obj: M, *, overwrite: bool = False) -> None:
         assert isinstance(obj, (dict, self.model)), 'Invalid object passed'
