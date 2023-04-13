@@ -340,9 +340,11 @@ class Segment(BaseSegment):
                 except ValueError:
                     pass
             
-            if (not include and not export_kwds and not self.model._config.exclude) or ignore:
+            if ignore:      
                 return data
-            if '*' in include:
+            if not include or not export_kwds or not self.model._config.exclude:
+                return data
+            if '*' in include:      
                 return data.dict()
 
             inc = dict()
