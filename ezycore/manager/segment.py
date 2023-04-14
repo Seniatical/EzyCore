@@ -330,6 +330,8 @@ class Segment(BaseSegment):
         self.__data = dict()
         self.__position = 0
 
+        self._invalidated_last = False
+
     def size(self) -> int:
         return len(self.__data)
 
@@ -339,8 +341,9 @@ class Segment(BaseSegment):
     def values(self) -> Iterable[Model]:
         return iter(self.__data.values())
 
-    def _get(self, obj_key: Any, *include, default: Any = None, ignore: bool = False, **export_kwds) -> Optional[Model]:
-        ## Simply retrieves value, no queue handling here
+    def _get(self, obj_key: Any, *include, default: Any = None, 
+             ignore: bool = False, original: bool = False, **export_kwds) -> Optional[Model]:
+        ## Simply retrieves value, no queue/cache invalidation handling here
         try:
             data: Model = self.__data[obj_key]
             manager = self._get_manager()
@@ -354,11 +357,13 @@ class Segment(BaseSegment):
                     pass
             
             if ignore:      
-                return data
+                return data, data if original else data
 
             if not (include or export_kwds or self.model._config.exclude):
-                return data
-            if '*' in include:      
+                return data, data if original else data
+            if '*' in include:
+                if original:
+                    return data.dict(), data   
                 return data.dict()
 
             inc = dict()
@@ -384,6 +389,9 @@ class Segment(BaseSegment):
             
             if not export_kwds['include']:      export_kwds.pop('include')
             if not export_kwds['exclude']:      export_kwds.pop('exclude')
+
+            if original:
+                return data.dict(**export_kwds), data
             return data.dict(**export_kwds)
 
         except KeyError as err:
@@ -394,13 +402,26 @@ class Segment(BaseSegment):
     def get(self, obj_key: Any, *flags, default: Any = ..., **export_kwds) -> Optional[Model]:
         try:
             self.__queue.remove(obj_key)
-        except ValueError as err:
+        except ValueError:
             if default == ...:
-                raise ValueError('Object not found') from err
+                raise ValueError('Object not found')
             return default
         self.__queue.append(obj_key)
+        value, result = self._get(obj_key, *flags, original=True, default=default, **export_kwds)
 
-        return self._get(obj_key, *flags, default=default, **export_kwds)
+        max_fetches = result._config.invalidate_after
+        if max_fetches < 0:
+            self._invalidated_last = False
+            return result
+
+        fetches = result._config.__ezycore_internal__['n_fetch'] + 1
+        if fetches >= max_fetches:
+            self._invalidated_last = True
+            self.remove(obj_key)
+        else:
+            self._invalidated_last = False
+            result._config.__ezycore_internal__['n_fetch'] = fetches
+        return value
 
     def search(self, func: Callable[[Model], bool], *fields, limit: int = -1, **export_kwds) -> Iterable[M]:
         results = list()
@@ -446,14 +467,15 @@ class Segment(BaseSegment):
 
     def remove(self, obj_key: Any, *default: Any) -> Optional[Model]:
         try:
-            self.get(obj_key)       ## Checks if item exists and brings item at the back of queue
+            i = self.__queue.index(obj_key)
         except ValueError as err:
             if default:
                 return default[0] if len(default) == 1 else default
             raise err
+        self.__queue.pop(i)
+        r = self.__data.pop(obj_key)
 
-        self.__queue.pop()
-        return self.__data.pop(obj_key)
+        return r
 
     def invalidate_all(self, func: Callable[[Model], bool], *, limit: int = -1) -> Iterable[Model]:
         values = list()
