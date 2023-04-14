@@ -30,6 +30,7 @@ class Config(BaseModel):
 
 class Model(BaseModel):
     __ezycore_partials__: tuple = None
+    _config: Config
 
     def _read_partials(cls) -> Iterator[str]:
         for k, v in cls.__annotations__.items():
