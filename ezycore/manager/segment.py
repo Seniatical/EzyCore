@@ -459,6 +459,32 @@ class Segment(BaseSegment):
             return
         return self.__data[self.__queue[0]]
 
+    def oldest(self, limit: int = -1) -> Iterable[Model]:
+        """ Retrieves elements starting from the least accessed values
+
+        Parameters
+        ----------
+        limit: :class:`int`
+            How many elements to retrieve,
+            if < 0 then all elements are retrieved
+        """
+        limit = limit if limit > 0 else self.size()
+        for i in range(limit):
+            yield self.__data[self.__queue[i]]
+    
+    def newest(self, limit: int = -1) -> Iterable[Model]:
+        """ Retrieves elements starting from the most recently accessed values
+
+        Parameters
+        ----------
+        limit: :class:`int`
+            How many elements to retreive,
+            if < 0 then all elements are retrieved
+        """
+        limit = limit if limit > 0 else self.size()
+        for i in range(limit):
+            yield self.__data[self.__queue[-1 - i]]
+
     def clear(self) -> None:
         self.__position = 0
         self.__data.clear()
@@ -482,8 +508,8 @@ class Segment(BaseSegment):
             print()
         print()
 
-    def __iter__(self):
-        self.__position = 0
+    def __iter__(self, *, position: int = 0):
+        self.__position = position
         return super().__iter__()
 
     def __next__(self) -> Model:
