@@ -456,7 +456,14 @@ class Segment(BaseSegment):
         return self.__data.pop(obj_key)
 
     def invalidate_all(self, func: Callable[[Model], bool], *, limit: int = -1) -> Iterable[Model]:
-        return super().invalidate_all(func, limit=limit)
+        values = list()
+        for key in self.__queue:
+            if len(values) >= limit and limit > 0:
+                break
+            works = func(self._get(key, ignore=True))
+            if works:
+                values.append(key)
+        return [self.remove(i) for i in values]
 
     def update(self, obj_key: Any, **kwds) -> None:
         current = self.get(obj_key)
