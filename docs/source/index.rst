@@ -61,6 +61,7 @@ Basic Example
 
    module.rst
    models.rst
+   guides/index.rst
 
 
 Indices and tables
