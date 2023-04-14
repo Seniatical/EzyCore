@@ -235,6 +235,19 @@ class BaseSegment(ABC):
         """
 
     @abstractmethod
+    def invalidate_all(self, func: Callable[[Model], bool], *, limit: int = -1) -> Iterable[Model]:
+        """ Invalidates all entries which match check function
+
+        Parameters
+        ----------
+        func: Callable[[:class:`Model`], :class:`bool`]
+            Function which indicates whether entry should be removed
+        limit: :class:`int`
+            Limit how many entries should be removed,
+            if < 0 no limit is set
+        """
+
+    @abstractmethod
     def update(self, obj_key: Any, **kwds) -> None:
         """ Updates an element in the segment
 
@@ -391,7 +404,7 @@ class Segment(BaseSegment):
 
     def search(self, func: Callable[[Model], bool], *fields, limit: int = -1, **export_kwds) -> Iterable[M]:
         results = list()
-        for key in self.__queue[::-1]:
+        for key in self.__queue:
             if len(results) >= limit and limit > 0:
                 break
             works = func(self._get(key, ignore=True))
@@ -405,7 +418,7 @@ class Segment(BaseSegment):
         search_key = key or self.model._config.search_by
         re = _compile(expr, flags)
 
-        for key in self.__queue[::-1]:
+        for key in self.__queue:
             if len(results) >= limit and limit > 0:
                 break
             works = re.match(str(getattr(self._get(key, ignore=True), search_key)))
@@ -441,6 +454,9 @@ class Segment(BaseSegment):
 
         self.__queue.pop()
         return self.__data.pop(obj_key)
+
+    def invalidate_all(self, func: Callable[[Model], bool], *, limit: int = -1) -> Iterable[Model]:
+        return super().invalidate_all(func, limit=limit)
 
     def update(self, obj_key: Any, **kwds) -> None:
         current = self.get(obj_key)
