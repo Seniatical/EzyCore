@@ -450,6 +450,9 @@ class Segment(BaseSegment):
 
     def add(self, obj: M, *, overwrite: bool = False) -> None:
         assert isinstance(obj, (dict, self.model)), 'Invalid object passed'
+        if isinstance(obj, self.model):
+            if obj._config.__ezycore_internal__['n_fetch'] >= obj._config.invalidate_after:
+                raise ValueError('Item has already been invalidated')
 
         v = dict(obj)
         key = self.model._config.search_by
