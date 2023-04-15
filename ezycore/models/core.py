@@ -22,10 +22,15 @@ class Config(BaseModel):
         Fields to exclude from being returned when being fetched
     partials: Dict[:class:`str`, :class:`str`]
         Mapping of partial vars to segment names.
+    invalidate_after: :class:`int`
+        Automatically invalidates entry after it is fetched n times
     """
     search_by: str
     exclude: Union[dict, set] = set()
     partials: Dict[str, str] = dict()
+    invalidate_after: int = -1
+
+    __ezycore_internal__: dict = {'n_fetch': 0}
 
 
 class Model(BaseModel):
@@ -67,7 +72,6 @@ class Model(BaseModel):
         else:
             assert isinstance(r, Config), 'Invalid config class provided'
         Model._verify_partials(cls)
-
         return super().__init_subclass__(**kwds)
 
 

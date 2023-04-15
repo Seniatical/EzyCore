@@ -16,5 +16,5 @@ from .models import (
 )
 
 __version_info__ = ('0', '0', '1')
-__release_type__ = 'alpha'
-__version__ = 'v0.2.3-a2.2'
+__release_type__ = 'beta'
+__version__ = 'v0.3.1-b4'

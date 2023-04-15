@@ -235,6 +235,19 @@ class BaseSegment(ABC):
         """
 
     @abstractmethod
+    def invalidate_all(self, func: Callable[[Model], bool], *, limit: int = -1) -> Iterable[Model]:
+        """ Invalidates all entries which match check function
+
+        Parameters
+        ----------
+        func: Callable[[:class:`Model`], :class:`bool`]
+            Function which indicates whether entry should be removed
+        limit: :class:`int`
+            Limit how many entries should be removed,
+            if < 0 no limit is set
+        """
+
+    @abstractmethod
     def update(self, obj_key: Any, **kwds) -> None:
         """ Updates an element in the segment
 
@@ -317,6 +330,8 @@ class Segment(BaseSegment):
         self.__data = dict()
         self.__position = 0
 
+        self._invalidated_last = False
+
     def size(self) -> int:
         return len(self.__data)
 
@@ -326,8 +341,9 @@ class Segment(BaseSegment):
     def values(self) -> Iterable[Model]:
         return iter(self.__data.values())
 
-    def _get(self, obj_key: Any, *include, default: Any = None, ignore: bool = False, **export_kwds) -> Optional[Model]:
-        ## Simply retrieves value, no queue handling here
+    def _get(self, obj_key: Any, *include, default: Any = None, 
+             ignore: bool = False, original: bool = False, **export_kwds) -> Optional[Model]:
+        ## Simply retrieves value, no queue/cache invalidation handling here
         try:
             data: Model = self.__data[obj_key]
             manager = self._get_manager()
@@ -341,11 +357,13 @@ class Segment(BaseSegment):
                     pass
             
             if ignore:      
-                return data
+                return (data, data) if original else data
 
             if not (include or export_kwds or self.model._config.exclude):
-                return data
-            if '*' in include:      
+                return (data, data) if original else data
+            if '*' in include:
+                if original:
+                    return data.dict(), data   
                 return data.dict()
 
             inc = dict()
@@ -371,6 +389,9 @@ class Segment(BaseSegment):
             
             if not export_kwds['include']:      export_kwds.pop('include')
             if not export_kwds['exclude']:      export_kwds.pop('exclude')
+
+            if original:
+                return data.dict(**export_kwds), data
             return data.dict(**export_kwds)
 
         except KeyError as err:
@@ -379,19 +400,36 @@ class Segment(BaseSegment):
             raise KeyError('object not found') from err
 
     def get(self, obj_key: Any, *flags, default: Any = ..., **export_kwds) -> Optional[Model]:
-        try:
-            self.__queue.remove(obj_key)
-        except ValueError as err:
-            if default == ...:
-                raise ValueError('Object not found') from err
-            return default
-        self.__queue.append(obj_key)
+        _ignore_q = export_kwds.pop('ignore_queue', False)
+        
+        if not _ignore_q:
+            try:
+                self.__queue.remove(obj_key)
+            except ValueError:
+                if default == ...:
+                    raise ValueError('Object not found')
+                return default
+            self.__queue.append(obj_key)
+        value, result = self._get(obj_key, *flags, original=True, default=default, **export_kwds)
 
-        return self._get(obj_key, *flags, default=default, **export_kwds)
+        max_fetches = result._config.invalidate_after
+        if max_fetches < 0:
+            self._invalidated_last = False
+            return value
+
+        fetches = result._config.__ezycore_internal__['n_fetch'] + 1
+        if fetches >= max_fetches:
+            self._invalidated_last = True
+            self.remove(obj_key)
+        else:
+            self._invalidated_last = False
+            result._config.__ezycore_internal__['n_fetch'] = fetches
+        return value
 
     def search(self, func: Callable[[Model], bool], *fields, limit: int = -1, **export_kwds) -> Iterable[M]:
+        export_kwds.update(ignore_queue=True)
         results = list()
-        for key in self.__queue[::-1]:
+        for key in self.__queue:
             if len(results) >= limit and limit > 0:
                 break
             works = func(self._get(key, ignore=True))
@@ -401,11 +439,12 @@ class Segment(BaseSegment):
         return results
 
     def search_using_re(self, expr: str, *fields, flags: int = 0, key: str = None, limit: int = -1, **export_kwds) -> Iterable[M]:
+        export_kwds.update(ignore_queue=True)
         results = list()
         search_key = key or self.model._config.search_by
         re = _compile(expr, flags)
 
-        for key in self.__queue[::-1]:
+        for key in self.__queue:
             if len(results) >= limit and limit > 0:
                 break
             works = re.match(str(getattr(self._get(key, ignore=True), search_key)))
@@ -416,6 +455,9 @@ class Segment(BaseSegment):
 
     def add(self, obj: M, *, overwrite: bool = False) -> None:
         assert isinstance(obj, (dict, self.model)), 'Invalid object passed'
+        if isinstance(obj, self.model):
+            if obj._config.__ezycore_internal__['n_fetch'] >= obj._config.invalidate_after:
+                raise ValueError('Item has already been invalidated')
 
         v = dict(obj)
         key = self.model._config.search_by
@@ -433,14 +475,25 @@ class Segment(BaseSegment):
 
     def remove(self, obj_key: Any, *default: Any) -> Optional[Model]:
         try:
-            self.get(obj_key)       ## Checks if item exists and brings item at the back of queue
+            i = self.__queue.index(obj_key)
         except ValueError as err:
             if default:
                 return default[0] if len(default) == 1 else default
             raise err
+        self.__queue.pop(i)
+        r = self.__data.pop(obj_key)
 
-        self.__queue.pop()
-        return self.__data.pop(obj_key)
+        return r
+
+    def invalidate_all(self, func: Callable[[Model], bool], *, limit: int = -1) -> Iterable[Model]:
+        values = list()
+        for key in self.__queue:
+            if len(values) >= limit and limit > 0:
+                break
+            works = func(self._get(key, ignore=True))
+            if works:
+                values.append(key)
+        return [self.remove(i) for i in values]
 
     def update(self, obj_key: Any, **kwds) -> None:
         current = self.get(obj_key)

@@ -31,15 +31,18 @@ class TestSegments(unittest.TestCase):
             return self.fail('Duplicate key added')
         except ValueError:
             pass
+        self.segment.clear()
 
     def test_segment_get(self):
         data = dict(field_1='Foo', field_2=10, field_3=False)
         self.segment.add(data)
 
         self.assertEqual(self.segment.get(10, '*'), data)
-        self.assertEqual(self.segment.get(10, 'field_1')['field_1'], 'Foo')
+        self.assertEqual(self.segment.get(10, 'field_1'), {'field_1': 'Foo'})
         self.assertEqual(self.segment.get(-1, default=None), None)
         self.assertEqual(self.segment.get(10), BasicTestModel(**data))
+
+        self.segment.clear()
 
     def test_segment_delete(self):
         data = dict(field_1='Foo', field_2=10, field_3=False)
@@ -57,6 +60,8 @@ class TestSegments(unittest.TestCase):
         f = self.segment.remove(10)
         self.assertEqual(f, BasicTestModel(**data).dict())
 
+        self.segment.clear()
+
     def test_segment_edit(self):
         data = dict(field_1='Foo', field_2=10, field_3=False)
         self.segment.add(data)
@@ -71,6 +76,8 @@ class TestSegments(unittest.TestCase):
         except ValidationError:
             pass
 
+        self.segment.clear()
+
     def test_segment_searches(self):
         d1 = dict(field_1='Foo', field_2=10, field_3=False)
         d2 = dict(field_1='Bar', field_2=5, field_3=True)
@@ -82,12 +89,14 @@ class TestSegments(unittest.TestCase):
 
         self.assertEqual(
             self.segment.search(lambda m: m.field_1 == 'Foo', 'field_2'),
-            [{'field_2': 50}, {'field_2': 10}], 'Failed search method')
+            [{'field_2': 10}, {'field_2': 50}], 'Failed search method')
 
         self.assertEqual(
             self.segment.search_using_re('^Bar$', 'field_2', key='field_1'),
             [{'field_2': 5}], 'Failed regex search'
         )
+
+        self.segment.clear()
 
     def test_segment_cache_invalidation(self):
         for i in range(10):
@@ -98,3 +107,11 @@ class TestSegments(unittest.TestCase):
         self.segment.add(dict(field_1='Foo', field_2=10, field_3=False))
         self.assertEqual(self.segment.last().field_2, 1)
         self.assertEqual(self.segment.first().field_2, 10)
+
+        r = self.segment.invalidate_all(lambda m: m.field_2 % 2 == 0, limit=3)
+        self.assertEqual(len(r), 3)
+        
+        for i in r:
+            if i.field_2 % 2 != 0:
+                self.fail('Failed invalidate_all method')
+                return
