@@ -357,10 +357,10 @@ class Segment(BaseSegment):
                     pass
             
             if ignore:      
-                return data, data if original else data
+                return (data, data) if original else data
 
             if not (include or export_kwds or self.model._config.exclude):
-                return data, data if original else data
+                return (data, data) if original else data
             if '*' in include:
                 if original:
                     return data.dict(), data   
@@ -400,19 +400,22 @@ class Segment(BaseSegment):
             raise KeyError('object not found') from err
 
     def get(self, obj_key: Any, *flags, default: Any = ..., **export_kwds) -> Optional[Model]:
-        try:
-            self.__queue.remove(obj_key)
-        except ValueError:
-            if default == ...:
-                raise ValueError('Object not found')
-            return default
-        self.__queue.append(obj_key)
+        _ignore_q = export_kwds.pop('ignore_queue', False)
+        
+        if not _ignore_q:
+            try:
+                self.__queue.remove(obj_key)
+            except ValueError:
+                if default == ...:
+                    raise ValueError('Object not found')
+                return default
+            self.__queue.append(obj_key)
         value, result = self._get(obj_key, *flags, original=True, default=default, **export_kwds)
 
         max_fetches = result._config.invalidate_after
         if max_fetches < 0:
             self._invalidated_last = False
-            return result
+            return value
 
         fetches = result._config.__ezycore_internal__['n_fetch'] + 1
         if fetches >= max_fetches:
@@ -424,6 +427,7 @@ class Segment(BaseSegment):
         return value
 
     def search(self, func: Callable[[Model], bool], *fields, limit: int = -1, **export_kwds) -> Iterable[M]:
+        export_kwds.update(ignore_queue=True)
         results = list()
         for key in self.__queue:
             if len(results) >= limit and limit > 0:
@@ -435,6 +439,7 @@ class Segment(BaseSegment):
         return results
 
     def search_using_re(self, expr: str, *fields, flags: int = 0, key: str = None, limit: int = -1, **export_kwds) -> Iterable[M]:
+        export_kwds.update(ignore_queue=True)
         results = list()
         search_key = key or self.model._config.search_by
         re = _compile(expr, flags)
